@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Chuong trinh "ben ngoai" nhan anh tu add-in Camera ao: TCP (co ACK) hoac quet thu muc (.done) -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CameraAo.Model\CameraAo.Model.csproj" />
+  </ItemGroup>
+
+</Project>

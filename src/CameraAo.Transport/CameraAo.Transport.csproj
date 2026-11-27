@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Truyen du lieu anh ra ngoai: thu muc chung + file ".done", va TCP co ACK. KHONG phu thuoc RobotStudio. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>CameraAo.Transport</RootNamespace>
+    <AssemblyName>CameraAo.Transport</AssemblyName>
+  </PropertyGroup>
+
+</Project>

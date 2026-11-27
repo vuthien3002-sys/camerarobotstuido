@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Mo hinh camera: KHONG phu thuoc RobotStudio -> unit test chay doc lap -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>CameraAo.Model</RootNamespace>
+    <AssemblyName>CameraAo.Model</AssemblyName>
+  </PropertyGroup>
+
+</Project>

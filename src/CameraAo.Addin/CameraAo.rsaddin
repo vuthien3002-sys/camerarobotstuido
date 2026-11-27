@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  Khai bao add-in "Camera ao" cho RobotStudio 2026.
+  build.ps1 chep file nay cung cac DLL vao <RobotStudio>\Bin\Addins\CameraAo\
+  (DLL nam cung thu muc voi file nay nen khong can <Path>).
+  Kiem tra hop le theo <RobotStudio>\Schemas\RobotStudioAddin.xsd (Dependencies la BAT BUOC).
+-->
+<RobotStudioAddIn xmlns="urn:abb-robotics-robotstudio-addin" autoLoad="true">
+  <ApplicationId>com.thien.cameraao</ApplicationId>
+  <DisplayName>Camera ao</DisplayName>
+  <Description>Camera mo phong eye-in-hand: mo hinh pinhole tu file cau hinh, chup W x H, trigger bang nut hoac DO, luu PNG + JSON, gui ra ngoai.</Description>
+  <AddInType>General</AddInType>
+  <MinimumHostVersion>26.1</MinimumHostVersion>
+  <Dependencies>Station</Dependencies>
+  <Platform>Any</Platform>
+  <Assembly>
+    <FileName>CameraAo.dll</FileName>
+  </Assembly>
+</RobotStudioAddIn>

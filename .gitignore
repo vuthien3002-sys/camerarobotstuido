@@ -1,0 +1,8 @@
+bin/
+obj/
+.vs/
+*.user
+TestResults/
+# anh chup sinh ra khi chay
+anh/
+*.bak

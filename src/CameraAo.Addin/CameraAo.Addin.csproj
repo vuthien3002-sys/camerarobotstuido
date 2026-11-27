@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Add-in "Camera ao" cho RobotStudio 2026 (.NET 10). Phan CHUP + GIAO DIEN (phu thuoc SDK RobotStudio). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>CameraAo</AssemblyName>
+    <RootNamespace>CameraAo.Addin</RootNamespace>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <PlatformTarget>x64</PlatformTarget>
+    <Version>0.4.0</Version>
+  </PropertyGroup>
+
+  <!-- Thu muc Bin cua RobotStudio. build.ps1 truyen vao bang -p:RSBin=...; neu khong thi thu cac cho cai mac dinh. -->
+  <PropertyGroup Condition="'$(RSBin)' == ''">
+    <RSBin Condition="Exists('$(MSBuildProgramFiles32)\ABB\RobotStudio 2026\Bin')">$(MSBuildProgramFiles32)\ABB\RobotStudio 2026\Bin</RSBin>
+    <RSBin Condition="'$(RSBin)' == '' and Exists('D:\Program Files (x86)\ABB\RobotStudio 2026\Bin')">D:\Program Files (x86)\ABB\RobotStudio 2026\Bin</RSBin>
+  </PropertyGroup>
+
+  <Target Name="KiemTraRSBin" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(RSBin)\ABB.Robotics.RobotStudio.dll')"
+           Text="Khong tim thay SDK RobotStudio 2026. Chay build.ps1 hoac truyen -p:RSBin=&quot;...\RobotStudio 2026\Bin&quot;" />
+  </Target>
+
+  <!-- DLL SDK: Private=false -> KHONG chep ra thu muc build (RobotStudio da co san) -->
+  <ItemGroup>
+    <Reference Include="ABB.Robotics.Math"><HintPath>$(RSBin)\ABB.Robotics.Math.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="ABB.Robotics.RobotStudio"><HintPath>$(RSBin)\ABB.Robotics.RobotStudio.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="ABB.Robotics.RobotStudio.Environment"><HintPath>$(RSBin)\ABB.Robotics.RobotStudio.Environment.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="ABB.Robotics.RobotStudio.Stations"><HintPath>$(RSBin)\ABB.Robotics.RobotStudio.Stations.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="ABB.Robotics.RobotStudio.Stations.Forms"><HintPath>$(RSBin)\ABB.Robotics.RobotStudio.Stations.Forms.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CameraAo.Model\CameraAo.Model.csproj" />
+    <ProjectReference Include="..\CameraAo.Transport\CameraAo.Transport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="CameraAo.rsaddin" CopyToOutputDirectory="PreserveNewest" />
+    <None Remove="*.txt" />
+  </ItemGroup>
+
+</Project>
