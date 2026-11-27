@@ -24,6 +24,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $goc = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $goc
+# .NET (XmlReader, File...) tinh duong dan tuong doi theo thu muc cua TIEN TRINH, khong theo Set-Location
+[System.IO.Directory]::SetCurrentDirectory($goc)
 
 function Find-RobotStudioBin {
     if ($RobotStudioBin) { return $RobotStudioBin }
@@ -73,7 +75,7 @@ if (-not $BoQuaTest) {
 }
 
 # 3. Kiem tra file .rsaddin theo schema cua RobotStudio
-$rsaddin = 'src\CameraAo.Addin\CameraAo.rsaddin'
+$rsaddin = Join-Path $goc 'src\CameraAo.Addin\CameraAo.rsaddin'
 $xsd = Join-Path (Split-Path $rs -Parent) 'Schemas\RobotStudioAddin.xsd'
 if (Test-Path $xsd) {
     $loi = Test-RsAddinSchema $rsaddin $xsd

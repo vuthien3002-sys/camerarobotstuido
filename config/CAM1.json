@@ -1,15 +1,31 @@
 {
   "ten": "CAM1",
   "mo_ta": "Basler ace acA2440-20gm (Sony IMX264, 3.45 um, 2/3 inch) + Computar M1214-MP2 f=12 mm",
-  "anh": { "rong": 2448, "cao": 2048 },
+  "anh": {
+    "rong": 2448,
+    "cao": 2048
+  },
   "intrinsic": {
     "fx": 3478.3,
     "fy": 3478.3,
     "cx": 1224.0,
     "cy": 1024.0,
-    "dist": [0, 0, 0, 0, 0]
+    "dist": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
   },
-  "flange_to_camera": { "x_mm": 0, "y_mm": 0, "z_mm": 0, "rx_deg": 0, "ry_deg": 0, "rz_deg": 0 },
+  "flange_to_camera": {
+    "x_mm": 0,
+    "y_mm": 0,
+    "z_mm": 0,
+    "rx_deg": -0,
+    "ry_deg": -0,
+    "rz_deg": 0
+  },
   "thu_muc_anh": "../anh",
   "gui_ra": {
     "file_ghi_xong": true,

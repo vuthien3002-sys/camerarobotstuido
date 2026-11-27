@@ -44,7 +44,8 @@ namespace CameraAo.Addin
                 _bo.DaCapNhat = cam => { try { _ve.Ve(Station.ActiveStation, _bo.Control, cam, _mh, _ch.Ten); } catch { } };
                 NapCauHinh();
                 TaoRibbon();
-                Log("Da nap add-in Camera ao v0.4. " + MoTaCauHinh());
+                Log("Da nap add-in Camera ao v0.5. " + MoTaCauHinh());
+                TuKiemTra.HenGioNeuCan(ChayTuKiemTra, Log);
             }
             catch (Exception ex)
             {
@@ -68,6 +69,7 @@ namespace CameraAo.Addin
             ThemNut(nhomCh, "CameraAo.NapLai", "Nạp lại cấu hình", () => { NapCauHinh(); Log("Da nap lai. " + MoTaCauHinh()); _ve.Xoa(); if (_bo.DaMo) MoCamera(); });
             ThemNut(nhomCh, "CameraAo.LayTuFrame", "Lấy vị trí từ frame", LayViTriTuFrame);
             ThemNut(nhomCh, "CameraAo.ThongTin", "Thông tin", ThongTin);
+            ThemNut(nhomCh, "CameraAo.TuKiemTra", "Tự kiểm tra", ChayTuKiemTra);
 
             tab.Groups.Add(nhomCam);
             tab.Groups.Add(nhomCh);
@@ -93,8 +95,10 @@ namespace CameraAo.Addin
             if (st == null) { Log("Hay mo station truoc."); return; }
             _bo.MoCuaSo(st, TieuDe());
             var cam = LayTuTheCamera();
-            Log(cam.HasValue ? "Da mo cua so camera. Camera tai " + cam.Value.T + " mm, nhin theo " + cam.Value.TrucZ
-                             : "Da mo cua so camera nhung chua lay duoc tu the (task dang chon khong co robot?)");
+            if (!cam.HasValue) { Log("Da mo cua so camera nhung chua lay duoc tu the (task dang chon khong co robot?)"); return; }
+            var (tuThat, vaoThat, fovThat) = _bo.GocNhinThucTe();
+            Log(string.Create(CultureInfo.InvariantCulture,
+                $"Da mo cua so camera. Camera can dat tai {cam.Value.T} mm, nhin theo {cam.Value.TrucZ}. Khung nhin thuc te: mat {tuThat} mm, huong {(vaoThat - tuThat).Normalized()}, FOV {fovThat:F2} do."));
         }
 
         static string TieuDe() => FormattableString.Invariant(
@@ -186,7 +190,11 @@ namespace CameraAo.Addin
             };
             goc["flange_to_camera"] = o2;
             File.Copy(_ch.DuongDanFile, _ch.DuongDanFile + ".bak", true);
-            File.WriteAllText(_ch.DuongDanFile, goc.ToJsonString(new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            File.WriteAllText(_ch.DuongDanFile, goc.ToJsonString(new System.Text.Json.JsonSerializerOptions
+            {
+                WriteIndented = true,
+                Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,   // giu nguyen dau '+' trong mo_ta
+            }));
             NapCauHinh();
             _ve.Xoa();
             Log("Da ghi vi tri frame '" + fr.Name + "' vao cau hinh (ban cu: .bak). " + MoTaCauHinh());
@@ -212,11 +220,11 @@ namespace CameraAo.Addin
             Log("Phien moi: anh tiep theo se vao thu muc moi, so thu tu bat dau tu 1.");
         }
 
-        /// <summary>Chup mot anh. nguon = "nut" hoac "DO". Tra ve true neu ghi thanh cong.</summary>
-        public static bool ChupAnh(string nguon)
+        /// <summary>Chup mot anh. nguon = "nut", "DO" hoac "tu_kiem_tra". Tra ve cac file da ghi (null neu khong chup duoc).</summary>
+        public static KetQuaGhi ChupAnh(string nguon)
         {
             var st = Station.ActiveStation;
-            if (st == null) { Log("Hay mo station truoc."); return false; }
+            if (st == null) { Log("Hay mo station truoc."); return null; }
             if (!_bo.DaMo) _bo.MoCuaSo(st, TieuDe());
 
             if (_thuMucPhien == null)
@@ -255,21 +263,41 @@ namespace CameraAo.Addin
             }
             if (kt.Width != _mh.Rong || kt.Height != _mh.Cao)
                 md.CanhBao.Add($"Anh render {kt.Width}x{kt.Height} khac cau hinh {_mh.Rong}x{_mh.Cao}");
+            if (!_bo.OnDinh)
+            {
+                md.CanhBao.Add($"Anh chua on dinh sau {_bo.SoLanRender} lan render (2 lan lien tiep van khac nhau)");
+                Log("CANH BAO: anh #" + chiSo + " chua on dinh sau " + _bo.SoLanRender + " lan render.");
+            }
+            // Tu kiem tra: goc nhin thuc te cua khung nhin co dung tu the camera khong
+            var (tuThat, vaoThat, fovThat) = _bo.GocNhinThucTe();
+            double lechMat = (tuThat - cam.T).Length();
+            double lechHuong = ((vaoThat - tuThat).Normalized() - cam.TrucZ).Length();
+            if (lechMat > 0.5 || lechHuong > 1e-3 || Math.Abs(fovThat - _mh.FovDocDo) > 0.01)
+            {
+                string s = string.Create(CultureInfo.InvariantCulture,
+                    $"Goc nhin thuc te lech: mat {tuThat} (lech {lechMat:F2} mm), huong lech {lechHuong:F4}, FOV {fovThat:F3} (can {_mh.FovDocDo:F3})");
+                md.CanhBao.Add(s);
+                Log("CANH BAO: " + s);
+            }
 
             var ghi = new GhiThuMuc(_thuMucPhien, _ch.GuiRa.FileGhiXong);
             KetQuaGhi kq = ghi.Ghi(tenGoc, png, md.TaoJson());
             string tMoPhong = md.ThoiGianMoPhongS.HasValue
                 ? string.Create(CultureInfo.InvariantCulture, $", t mo phong = {md.ThoiGianMoPhongS:F3} s") : "";
             Log(string.Create(CultureInfo.InvariantCulture,
-                $"Anh #{chiSo} ({nguon}) {kt.Width}x{kt.Height} -> {kq.Png}. Camera tai {cam.T} mm{tMoPhong}"));
+                $"Anh #{chiSo} ({nguon}) {kt.Width}x{kt.Height}, render {_bo.SoLanRender} lan{(_bo.OnDinh ? " (on dinh)" : "")}, tam an {_bo.SoDoiTuongTamAn} frame/target -> {kq.Png}. Camera tai {cam.T} mm{tMoPhong}"));
 
             if (_ch.GuiRa.TcpBat) GuiNen(chiSo, kq);
-            return true;
+            return kq;
         }
+
+        static void ChayTuKiemTra() =>
+            TuKiemTra.Chay(ChupAnh, MoCamera, PhienMoi, () => _bo.Control, _mh, _ch.ThuMucAnhTuyetDoi(), Log);
 
         static bool DangMoPhong()
         {
-            try { return Simulator.State.ToString() != "Stopped"; } catch { return false; }
+            // Khi khong mo phong trang thai la Ready (khong phai Stopped) -> chi tinh Running/Paused
+            try { return Simulator.State == SimulationState.Running || Simulator.State == SimulationState.Paused; } catch { return false; }
         }
 
         /// <summary>Gui TCP o luong nen (khong chan giao dien), bao ket qua ve luong giao dien.</summary>

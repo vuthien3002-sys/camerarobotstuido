@@ -60,5 +60,25 @@ namespace CameraAo.Model.Tests
             Assert.False(ok);
             Assert.True(dh.ElapsedMilliseconds < 3000);
         }
+
+        [Fact]
+        public void GuiSocket_KhongCoBenNhan_KhongDeLaiLoiTacVuChuaDoc()
+        {
+            // Tai hien loi lam RobotStudio bao "Fatal Error": tac vu ket noi loi ma khong ai doc ket qua.
+            Exception loiChuaDoc = null;
+            EventHandler<UnobservedTaskExceptionEventArgs> bat = (s, e) => { loiChuaDoc = e.Exception; e.SetObserved(); };
+            TaskScheduler.UnobservedTaskException += bat;
+            try
+            {
+                var tam = new TcpListener(IPAddress.Loopback, 0); tam.Start();
+                int cong = ((IPEndPoint)tam.LocalEndpoint).Port; tam.Stop();
+                for (int i = 0; i < 3; i++)
+                    new GuiSocket("127.0.0.1", cong, 300).Gui(i, "CAM1", new KetQuaGhi(), out _);
+                System.Threading.Thread.Sleep(2500);       // cho cac ket noi dang do (neu co) ket thuc
+                for (int i = 0; i < 3; i++) { GC.Collect(); GC.WaitForPendingFinalizers(); }
+                Assert.Null(loiChuaDoc);
+            }
+            finally { TaskScheduler.UnobservedTaskException -= bat; }
+        }
     }
 }

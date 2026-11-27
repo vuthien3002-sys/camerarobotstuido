@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 
 namespace CameraAo.Transport
 {
@@ -30,10 +31,24 @@ namespace CameraAo.Transport
             try
             {
                 using var tcp = new TcpClient();
-                var ketNoi = tcp.ConnectAsync(May, Cong);
-                if (!ketNoi.Wait(Math.Min(500, ChoAckMs)) || !tcp.Connected)
+                // KET NOI CO HUY THEO THOI GIAN va LUON doc ket qua cua tac vu ket noi.
+                // (Loi cu: Wait(500) roi bo -> tac vu ket noi loi sau do ma khong ai doc ->
+                //  "unobserved task exception" -> RobotStudio bao Fatal Error.)
+                using (var huy = new CancellationTokenSource(Math.Min(500, ChoAckMs)))
                 {
-                    thongBao = $"khong ket noi duoc {May}:{Cong} (chua chay chuong trinh nhan?)";
+                    try
+                    {
+                        tcp.ConnectAsync(May, Cong, huy.Token).AsTask().GetAwaiter().GetResult();
+                    }
+                    catch (Exception ex) when (ex is OperationCanceledException || ex is SocketException)
+                    {
+                        thongBao = $"khong ket noi duoc {May}:{Cong} (chua chay chuong trinh nhan?) - {ex.GetType().Name}";
+                        return false;
+                    }
+                }
+                if (!tcp.Connected)
+                {
+                    thongBao = $"khong ket noi duoc {May}:{Cong}";
                     return false;
                 }
                 tcp.ReceiveTimeout = ChoAckMs;
