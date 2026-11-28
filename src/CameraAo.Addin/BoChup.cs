@@ -50,7 +50,7 @@ namespace CameraAo.Addin
                 _cuaSo.Caption = tieuDe;
                 _cuaSo.Visible = true;
                 AnVatKhoiCamera(st);
-                CapNhatGocNhin();
+                CapNhatGocNhin(batBuoc: true);
                 return;
             }
 
@@ -59,8 +59,7 @@ namespace CameraAo.Addin
             _gc.RootObject = st;
             try { _gc.ShowUCSGrid = false; _gc.ShowButtons = false; _gc.ShowKeyTips = false; } catch { }
             try { _gc.ShowUCSFrame = false; _gc.ShowCoordinateSystem = false; } catch { }
-            // Anh phai on dinh: khong de RobotStudio tu ha chi tiet (Auto) hay bo vat nho
-            try { _gc.DetailLevel = GraphicDetailLevel.Fine; _gc.ScreenSizeCulling = 0; } catch { }
+            // Xem truoc dung muc chi tiet mac dinh (nhe). Muc Fine + khong bo vat nho chi bat LUC CHUP (xem Chup()).
             try { _gc.PickingEnabled = false; _gc.Enabled = false; } catch { }   // khoa chuot
 
             _cuaSo = new ToolWindow("CameraAo.CuaSo", _gc, tieuDe);
@@ -68,11 +67,13 @@ namespace CameraAo.Addin
             UIEnvironment.Windows.AddDocked(_cuaSo, DockStyle.Right);
             AnVatKhoiCamera(st);
 
-            // Cap nhat xem truoc 10 lan/giay de bam theo robot
+            // Kiem tra 10 lan/giay de bam theo robot, nhung CHI dat lai goc nhin (va ve lai) khi tu the camera / FOV
+            // thay doi. Truoc day lan nao cung SyncCamera -> ve lai ca station 10 lan/giay tren luong giao dien
+            // -> zoom/xoay/keo View1 bi cham.
             _timer = new Timer { Interval = 100 };
             _timer.Tick += (s, e) => { try { if (_cuaSo != null && _cuaSo.Visible) CapNhatGocNhin(); } catch { } };
             _timer.Start();
-            CapNhatGocNhin();
+            CapNhatGocNhin(batBuoc: true);
         }
 
         /// <summary>An trong RIENG cua so camera: dung cu (co cau loai Tool) va vat co ten chua "camera".</summary>
@@ -114,14 +115,27 @@ namespace CameraAo.Addin
             finally { a.UnlockBits(da); b.UnlockBits(db); }
         }
 
-        /// <summary>Dat goc nhin cua GraphicControl theo tu the camera hien tai. Tra ve tu the da dung.</summary>
-        public TuThe? CapNhatGocNhin()
+        TuThe? _daDat;          // tu the camera lan dat goc nhin gan nhat
+        double _fovDaDat = double.NaN;
+
+        static bool GanBang(TuThe a, TuThe b) =>
+            (a.T - b.T).Length() < 0.01 && (a.TrucZ - b.TrucZ).Length() < 1e-5 && (a.TrucY - b.TrucY).Length() < 1e-5;
+
+        /// <summary>
+        /// Dat goc nhin cua GraphicControl theo tu the camera hien tai. Tra ve tu the da dung.
+        /// batBuoc = false: bo qua neu tu the + FOV khong doi so voi lan truoc (tranh ve lai thua).
+        /// </summary>
+        public TuThe? CapNhatGocNhin(bool batBuoc = false)
         {
             if (!DaMo || LayTuTheCamera == null || LayMoHinh == null) return null;
             TuThe? tt = LayTuTheCamera();
             if (!tt.HasValue) return null;
             var cam = tt.Value;
             var mh = LayMoHinh();
+            // GraphicControl/Camera.FieldOfView cua RobotStudio la goc nhin NGANG (do). Kiem chung bang 5 qua cau
+            // (truoc day dat goc DOC -> anh bi phong ~W/H = 1.195 lan). Goc doc tu suy ra = 2*atan(H/2fy).
+            double fov = mh.FovNgangDo;
+            if (!batBuoc && _daDat.HasValue && GanBang(_daDat.Value, cam) && Math.Abs(fov - _fovDaDat) < 1e-9) return cam;
 
             // He camera giong OpenCV: Z nhin ve truoc, Y huong XUONG trong anh -> huong "len" = -Y
             Vec3 tu = cam.T;
@@ -137,9 +151,10 @@ namespace CameraAo.Addin
                 try { _cam.LockRotate = 0; _cam.LockTranslate = 0; _cam.LockZoom = 0; } catch { }   // khoa thao tac nguoi dung
             }
             _cam.SetView(ChuyenDoiRs.DiemMet(vao), ChuyenDoiRs.DiemMet(tu), ChuyenDoiRs.Huong(len));
-            _cam.FieldOfView = mh.FovDocDo;
+            _cam.FieldOfView = fov;
             _gc.SyncCamera(_cam, true, 0f);
             if (!ReferenceEquals(_gc.Camera, _cam)) _gc.Camera = _cam;
+            _daDat = cam; _fovDaDat = fov;
             try { DaCapNhat?.Invoke(cam); } catch { }
             return cam;
         }
@@ -152,7 +167,7 @@ namespace CameraAo.Addin
         {
             camLucChup = TuThe.DonVi; kichThuocThat = Size.Empty;
             if (!DaMo) throw new InvalidOperationException("Cua so camera chua mo");
-            var tt = CapNhatGocNhin();
+            var tt = CapNhatGocNhin(batBuoc: true);
             if (!tt.HasValue) throw new InvalidOperationException("Chua lay duoc tu the camera (station chua co robot?)");
             camLucChup = tt.Value;
             try { Station.UpdateGraphics(true); } catch { }
@@ -166,8 +181,17 @@ namespace CameraAo.Addin
             // Frame / tool frame / target gan tren mat bich lot vao anh (SetObjectVisible rieng cho cua so camera
             // khong an duoc) -> tam an tren toan station trong luc chup roi tra lai.
             var daAn = TamAnDoiTuongKhongPhaiVat();
+            // Luc chup: muc chi tiet cao nhat, khong bo vat nho -> anh day du, lap lai duoc. Chup xong tra ve nhu cu.
+            GraphicDetailLevel? chiTietCu = null; double? cullCu = null;
+            try { chiTietCu = _gc.DetailLevel; _gc.DetailLevel = GraphicDetailLevel.Fine; } catch { }
+            try { cullCu = _gc.ScreenSizeCulling; _gc.ScreenSizeCulling = 0; } catch { }
             try { return ChupOnDinh(rong, cao, tuyChon, out kichThuocThat); }
-            finally { TraLaiHienThi(daAn); }
+            finally
+            {
+                try { if (chiTietCu.HasValue) _gc.DetailLevel = chiTietCu.Value; } catch { }
+                try { if (cullCu.HasValue) _gc.ScreenSizeCulling = cullCu.Value; } catch { }
+                TraLaiHienThi(daAn);
+            }
         }
 
         /// <summary>Tam an moi doi tuong KHONG phai vat the (frame, tooldata, target, workobject, task...) co thuoc tinh Visible.</summary>

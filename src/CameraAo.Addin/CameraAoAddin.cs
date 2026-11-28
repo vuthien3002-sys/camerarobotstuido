@@ -4,7 +4,7 @@
 //   CameraAo.Transport : ghi thu muc + file .done, gui TCP co ACK              - khong phu thuoc RobotStudio
 //   BoChup.cs          : CHUP (GraphicControl rieng, khoa chuot, ScreenShot W x H)
 //   CameraAoAddin.cs   : GIAO DIEN + dieu phoi (ribbon, nut, log)
-// Don vi: API RobotStudio dung met + radian (rieng GraphicControl.FieldOfView dung DO); mo hinh dung mm + do.
+// Don vi: API RobotStudio dung met + radian (rieng GraphicControl.FieldOfView dung DO va la goc NGANG); mo hinh dung mm + do.
 
 using System;
 using System.Collections.Generic;
@@ -44,7 +44,7 @@ namespace CameraAo.Addin
                 _bo.DaCapNhat = cam => { try { _ve.Ve(Station.ActiveStation, _bo.Control, cam, _mh, _ch.Ten); } catch { } };
                 NapCauHinh();
                 TaoRibbon();
-                Log("Da nap add-in Camera ao v0.5. " + MoTaCauHinh());
+                Log("Da nap add-in Camera ao v0.6. " + MoTaCauHinh());
                 TuKiemTra.HenGioNeuCan(ChayTuKiemTra, Log);
             }
             catch (Exception ex)
@@ -98,7 +98,7 @@ namespace CameraAo.Addin
             if (!cam.HasValue) { Log("Da mo cua so camera nhung chua lay duoc tu the (task dang chon khong co robot?)"); return; }
             var (tuThat, vaoThat, fovThat) = _bo.GocNhinThucTe();
             Log(string.Create(CultureInfo.InvariantCulture,
-                $"Da mo cua so camera. Camera can dat tai {cam.Value.T} mm, nhin theo {cam.Value.TrucZ}. Khung nhin thuc te: mat {tuThat} mm, huong {(vaoThat - tuThat).Normalized()}, FOV {fovThat:F2} do."));
+                $"Da mo cua so camera. Camera can dat tai {cam.Value.T} mm, nhin theo {cam.Value.TrucZ}. Khung nhin thuc te: mat {tuThat} mm, huong {(vaoThat - tuThat).Normalized()}, FOV ngang {fovThat:F2} do."));
         }
 
         static string TieuDe() => FormattableString.Invariant(
@@ -272,10 +272,11 @@ namespace CameraAo.Addin
             var (tuThat, vaoThat, fovThat) = _bo.GocNhinThucTe();
             double lechMat = (tuThat - cam.T).Length();
             double lechHuong = ((vaoThat - tuThat).Normalized() - cam.TrucZ).Length();
-            if (lechMat > 0.5 || lechHuong > 1e-3 || Math.Abs(fovThat - _mh.FovDocDo) > 0.01)
+            // FieldOfView cua RobotStudio = goc NGANG
+            if (lechMat > 0.5 || lechHuong > 1e-3 || Math.Abs(fovThat - _mh.FovNgangDo) > 0.01)
             {
                 string s = string.Create(CultureInfo.InvariantCulture,
-                    $"Goc nhin thuc te lech: mat {tuThat} (lech {lechMat:F2} mm), huong lech {lechHuong:F4}, FOV {fovThat:F3} (can {_mh.FovDocDo:F3})");
+                    $"Goc nhin thuc te lech: mat {tuThat} (lech {lechMat:F2} mm), huong lech {lechHuong:F4}, FOV ngang {fovThat:F3} (can {_mh.FovNgangDo:F3})");
                 md.CanhBao.Add(s);
                 Log("CANH BAO: " + s);
             }
