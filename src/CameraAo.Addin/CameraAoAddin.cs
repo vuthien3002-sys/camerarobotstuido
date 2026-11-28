@@ -42,9 +42,15 @@ namespace CameraAo.Addin
                 _bo.LayMoHinh = () => _mh;
                 _bo.Log = Log;
                 _bo.DaCapNhat = cam => { try { _ve.Ve(Station.ActiveStation, _bo.Control, cam, _mh, _ch.Ten); } catch { } };
+                TriggerDo.ChupAnh = ChupAnh;
+                TriggerDo.Log = Log;
+                TriggerDo.LayCauHinh = () => _ch.Trigger;
                 NapCauHinh();
                 TaoRibbon();
-                Log("Da nap add-in Camera ao v0.6. " + MoTaCauHinh());
+                // Smart Component trigger luu cung station, handler thi khong -> gan lai khi mo/doi station
+                Project.ActiveProjectChanged += (s, e) => { try { TriggerDo.GanLai(Station.ActiveStation); } catch { } };
+                try { TriggerDo.GanLai(Station.ActiveStation); } catch { }
+                Log("Da nap add-in Camera ao v0.7. " + MoTaCauHinh());
                 TuKiemTra.HenGioNeuCan(ChayTuKiemTra, Log);
             }
             catch (Exception ex)
@@ -71,8 +77,13 @@ namespace CameraAo.Addin
             ThemNut(nhomCh, "CameraAo.ThongTin", "Thông tin", ThongTin);
             ThemNut(nhomCh, "CameraAo.TuKiemTra", "Tự kiểm tra", ChayTuKiemTra);
 
+            var nhomTg = new RibbonGroup("CameraAo.NhomTrigger", "Trigger DO");
+            ThemNut(nhomTg, "CameraAo.KetNoiTrigger", "Kết nối trigger", () => TriggerDo.KetNoi(Station.ActiveStation));
+            ThemNut(nhomTg, "CameraAo.TrangThaiTrigger", "Trạng thái trigger", () => Log(TriggerDo.TrangThai()));
+
             tab.Groups.Add(nhomCam);
             tab.Groups.Add(nhomCh);
+            tab.Groups.Add(nhomTg);
             UIEnvironment.RibbonTabs.Add(tab);
         }
 
@@ -94,6 +105,7 @@ namespace CameraAo.Addin
             var st = Station.ActiveStation;
             if (st == null) { Log("Hay mo station truoc."); return; }
             _bo.MoCuaSo(st, TieuDe());
+            TriggerDo.GanLai(st);
             var cam = LayTuTheCamera();
             if (!cam.HasValue) { Log("Da mo cua so camera nhung chua lay duoc tu the (task dang chon khong co robot?)"); return; }
             var (tuThat, vaoThat, fovThat) = _bo.GocNhinThucTe();
@@ -160,6 +172,7 @@ namespace CameraAo.Addin
             Log("Thu muc anh: " + _ch.ThuMucAnhTuyetDoi() + (_thuMucPhien != null ? " | phien hien tai: " + _thuMucPhien + ", da chup " + _chiSo + " anh" : ""));
             var cam = LayTuTheCamera();
             if (cam.HasValue) Log("Camera hien tai: vi tri " + cam.Value.T + " mm, huong nhin " + cam.Value.TrucZ);
+            Log(TriggerDo.TrangThai());
         }
 
         /// <summary>
@@ -217,7 +230,8 @@ namespace CameraAo.Addin
         {
             _thuMucPhien = null;
             _chiSo = 0;
-            Log("Phien moi: anh tiep theo se vao thu muc moi, so thu tu bat dau tu 1.");
+            TriggerDo.DatLaiDem();
+            Log("Phien moi: anh tiep theo se vao thu muc moi, so thu tu bat dau tu 1 (dem xung trigger dat lai 0).");
         }
 
         /// <summary>Chup mot anh. nguon = "nut", "DO" hoac "tu_kiem_tra". Tra ve cac file da ghi (null neu khong chup duoc).</summary>

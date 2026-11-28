@@ -23,7 +23,7 @@
     "y_mm": 0,
     "z_mm": 0,
     "rx_deg": -0,
-    "ry_deg": -0,
+    "ry_deg": 0,
     "rz_deg": 0
   },
   "thu_muc_anh": "../anh",
@@ -37,6 +37,9 @@
   "trigger": {
     "smart_component": "CameraAo_CAM1",
     "tin_hieu_chup": "Chup",
-    "tin_hieu_xong": "DaChup"
+    "tin_hieu_xong": "DaChup",
+    "controller": "",
+    "do_robot": "DO_Chup",
+    "di_robot": "DI_DaChup"
   }
 }

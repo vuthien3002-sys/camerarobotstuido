@@ -72,6 +72,28 @@ namespace CameraAo.Model.Tests
             Assert.Empty(ch.KiemTra(out var cb));
             Assert.Empty(cb);
             Assert.Equal(32.81, ch.TaoMoHinh().FovDocDo, 2);
+            Assert.Equal("DO_Chup", ch.Trigger.DoRobot);
+            Assert.Equal("DI_DaChup", ch.Trigger.DiRobot);
+        }
+
+        [Fact]
+        public void Trigger_ThieuTruongMoi_DungMacDinh_CoTruong_DocDung()
+        {
+            // File cau hinh cu (chua co controller/do_robot/di_robot) van doc duoc, dung mac dinh
+            var cu = CauHinhCamera.DocTuChuoi(JsonMau);
+            Assert.Equal("CameraAo_CAM1", cu.Trigger.SmartComponent);
+            Assert.Equal("", cu.Trigger.Controller);
+            Assert.Equal("DO_Chup", cu.Trigger.DoRobot);
+            Assert.Equal("DI_DaChup", cu.Trigger.DiRobot);
+
+            var moi = CauHinhCamera.DocTuChuoi(@"{ ""trigger"": { ""smart_component"": ""SC"", ""tin_hieu_chup"": ""A"", ""tin_hieu_xong"": ""B"",
+                ""controller"": ""Controller1"", ""do_robot"": ""doCam"", ""di_robot"": ""diCam"" } }");
+            Assert.Equal("SC", moi.Trigger.SmartComponent);
+            Assert.Equal("A", moi.Trigger.TinHieuChup);
+            Assert.Equal("B", moi.Trigger.TinHieuXong);
+            Assert.Equal("Controller1", moi.Trigger.Controller);
+            Assert.Equal("doCam", moi.Trigger.DoRobot);
+            Assert.Equal("diCam", moi.Trigger.DiRobot);
         }
 
         [Fact]

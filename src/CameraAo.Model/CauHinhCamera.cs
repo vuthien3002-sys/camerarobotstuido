@@ -62,11 +62,21 @@ namespace CameraAo.Model
             [JsonPropertyName("tcp_cho_ack_ms")] public int TcpChoAckMs { get; set; } = 2000;
         }
 
+        /// <summary>
+        /// Trigger bang DO cua controller ao qua Station Logic:
+        /// controller.do_robot -> smart_component.tin_hieu_chup ; smart_component.tin_hieu_xong -> controller.di_robot.
+        /// </summary>
         public sealed class CauHinhTrigger
         {
             [JsonPropertyName("smart_component")] public string SmartComponent { get; set; } = "CameraAo_CAM1";
             [JsonPropertyName("tin_hieu_chup")] public string TinHieuChup { get; set; } = "Chup";
             [JsonPropertyName("tin_hieu_xong")] public string TinHieuXong { get; set; } = "DaChup";
+            /// <summary>Ten controller ao trong station; rong = controller dau tien.</summary>
+            [JsonPropertyName("controller")] public string Controller { get; set; } = "";
+            /// <summary>Tin hieu DO cua robot (RAPID SetDO) noi vao tin_hieu_chup.</summary>
+            [JsonPropertyName("do_robot")] public string DoRobot { get; set; } = "DO_Chup";
+            /// <summary>Tin hieu DI cua robot (RAPID WaitDI) nhan tin_hieu_xong.</summary>
+            [JsonPropertyName("di_robot")] public string DiRobot { get; set; } = "DI_DaChup";
         }
 
         static readonly JsonSerializerOptions TuyChonJson = new JsonSerializerOptions
